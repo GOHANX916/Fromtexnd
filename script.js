@@ -1,64 +1,44 @@
-const ws = new WebSocket("wss://baxkend.onrender.com"); // Your Render backend URL
-const messagesDiv = document.getElementById("messages");
-const statusSpan = document.getElementById("status");
+const ws = new WebSocket("wss://baxkend.onrender.com"); // WebSocket server URL
 
-// Update Online/Offline Status
-ws.onopen = () => {
-    statusSpan.textContent = "Online";
-    statusSpan.classList.add("online");
-    statusSpan.classList.remove("offline");
-};
-
-ws.onclose = () => {
-    statusSpan.textContent = "Offline";
-    statusSpan.classList.add("offline");
-    statusSpan.classList.remove("online");
-};
-
-// Handle Incoming Messages
+// Listen for incoming messages
 ws.onmessage = (event) => {
-    const { sender, text, timestamp, seen } = JSON.parse(event.data);
-    displayMessage(sender, text, timestamp, seen);
+    const msgObj = JSON.parse(event.data);
+    const messageContainer = document.createElement("div");
+    messageContainer.classList.add("message");
+
+    if (msgObj.sender === "me") {
+        messageContainer.classList.add("sent"); // Sent messages
+    } else {
+        messageContainer.classList.add("received"); // Received messages
+    }
+
+    messageContainer.textContent = msgObj.message;
+    document.querySelector(".chat-container").appendChild(messageContainer);
+
+    // Auto-scroll to the latest message
+    document.querySelector(".chat-container").scrollTop = document.querySelector(".chat-container").scrollHeight;
 };
 
-// Send Message
-document.getElementById("sendBtn").addEventListener("click", sendMessage);
-document.getElementById("messageInput").addEventListener("keypress", (event) => {
-    if (event.key === "Enter") sendMessage();
+// Send message on button click
+document.getElementById("sendBtn").addEventListener("click", () => {
+    sendMessage();
 });
 
+// Send message on Enter key press
+document.getElementById("messageInput").addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+});
+
+// Function to send messages
 function sendMessage() {
     const input = document.getElementById("messageInput");
-    if (input.value.trim() !== "") {
-        const message = {
-            sender: "You",
-            text: input.value,
-            timestamp: new Date().toLocaleTimeString(),
-            seen: false
-        };
-        ws.send(JSON.stringify(message));
-        displayMessage(message.sender, message.text, message.timestamp, false);
-        input.value = "";
-    }
-}
+    const message = input.value.trim();
 
-function displayMessage(sender, text, timestamp, seen) {
-    const messageDiv = document.createElement("div");
-    messageDiv.classList.add("message");
-    if (sender === "You") messageDiv.classList.add("user");
-
-    messageDiv.innerHTML = `
-        ${text}
-        <span class="timestamp">${timestamp}</span>
-        <span class="double-tick ${seen ? "seen" : ""}">✓✓</span>
-    `;
-    messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-    if (sender !== "You") {
-        // Mark message as seen
-        setTimeout(() => {
-            messageDiv.querySelector(".double-tick").classList.add("seen");
-        }, 1000);
+    if (message !== "") {
+        const msgObj = { sender: "me", message }; // Mark sender
+        ws.send(JSON.stringify(msgObj));
+        input.value = ""; // Clear input
     }
 }
