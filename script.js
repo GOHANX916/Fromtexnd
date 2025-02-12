@@ -1,69 +1,76 @@
-const ws = new WebSocket("wss://baxkend.onrender.com"); // WebSocket connection
-const chatBox = document.getElementById("chat-box");
-const messageInput = document.getElementById("messageInput");
+const socket = new WebSocket("wss://baxkend.onrender.com");
+const chatBox = document.getElementById("chatBox");
+const messageInput = document.getElementById("message");
 const sendBtn = document.getElementById("sendBtn");
-const status = document.getElementById("status");
+const statusText = document.getElementById("status");
 
-// Update online/offline status
-ws.onopen = () => { 
-    status.textContent = "Online"; 
-    status.classList.remove("text-gray-400"); 
-    status.classList.add("text-green-400"); 
+// **Handle WebSocket Connection**
+socket.onopen = () => {
+    console.log("Connected to server");
+    statusText.textContent = "Online";
+    statusText.classList.remove("text-gray-400");
+    statusText.classList.add("text-green-400");
 };
 
-ws.onclose = () => { 
-    status.textContent = "Offline"; 
-    status.classList.remove("text-green-400"); 
-    status.classList.add("text-gray-400"); 
+// **Handle Incoming Messages**
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === "message") {
+        displayMessage(data.sender, data.message, "received");
+    }
 };
 
-// Handle received messages
-ws.onmessage = (event) => {
-    const { sender, message } = JSON.parse(event.data);
-    displayMessage(sender, message);
-};
-
-// Send message when button is clicked
-sendBtn.addEventListener("click", sendMessage);
-        
-// Send message on Enter key press
-messageInput.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") sendMessage();
+// **Send Message**
+sendBtn.addEventListener("click", () => {
+    sendMessage();
 });
 
-// Function to display messages
-function displayMessage(sender, message) {
-    const messageContainer = document.createElement("div");
-    messageContainer.classList.add("flex", "items-start", "space-x-4", sender === "me" ? "justify-end" : "");
+messageInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+});
 
-    if (sender !== "me") {
-        messageContainer.innerHTML = `
-            <img src="https://storage.googleapis.com/a1aa/image/57g9bJnQ7UgVJfKsL9WZ_4p9hXz_JfdGLQMDAU1sIBc.jpg" 
-                class="w-10 h-10 rounded-full">
-            <div class="bg-gray-800 p-3 rounded-lg">
-                <p class="text-sm">${message}</p>
-            </div>`;
-    } else {
-        messageContainer.innerHTML = `
-            <div class="bg-green-500 text-white p-3 rounded-lg">
-                <p class="text-sm">${message}</p>
-            </div>
-            <img src="https://storage.googleapis.com/a1aa/image/iy1CpzJ72a_d5O7OOvIArh070PbH2fGIl9o5buhRXkE.jpg" 
-                class="w-10 h-10 rounded-full">`;
-    }
-
-    chatBox.appendChild(messageContainer);
-    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
-}
-
-// Function to send messages
 function sendMessage() {
     const message = messageInput.value.trim();
-    if (message !== "") {
-        const msgObj = { sender: "me", message };
-        ws.send(JSON.stringify(msgObj));
-        displayMessage("me", message);
-        messageInput.value = "";
-    }
+    if (message === "") return;
+
+    const data = {
+        type: "message",
+        sender: "me",
+        message: message
+    };
+
+    socket.send(JSON.stringify(data));
+    displayMessage("Me", message, "sent");
+    messageInput.value = "";
 }
 
+// **Display Messages in Chat**
+function displayMessage(sender, message, type) {
+    const messageDiv = document.createElement("div");
+    messageDiv.classList.add("message", type);
+
+    const img = document.createElement("img");
+    img.src = sender === "Me" 
+        ? "https://storage.googleapis.com/a1aa/image/iy1CpzJ72a_d5O7OOvIArh070PbH2fGIl9o5buhRXkE.jpg" 
+        : "https://storage.googleapis.com/a1aa/image/57g9bJnQ7UgVJfKsL9WZ_4p9hXz_JfdGLQMDAU1sIBc.jpg";
+
+    const contentDiv = document.createElement("div");
+    contentDiv.classList.add("content");
+    contentDiv.textContent = message;
+
+    messageDiv.appendChild(img);
+    messageDiv.appendChild(contentDiv);
+    chatBox.appendChild(messageDiv);
+
+    // Scroll to the latest message
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// **Handle Disconnection**
+socket.onclose = () => {
+    console.log("Disconnected from server");
+    statusText.textContent = "Offline";
+    statusText.classList.remove("text-green-400");
+    statusText.classList.add("text-gray-400");
+};

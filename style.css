@@ -1,0 +1,45 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chatBox {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+}
+
+.message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.message img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.message .content {
+    max-width: 70%;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.message.sent {
+    justify-content: flex-end;
+}
+
+.message.sent .content {
+    background-color: #34D399;
+    color: white;
+}
+
+.message.received .content {
+    background-color: #374151;
+    color: white;
+}
